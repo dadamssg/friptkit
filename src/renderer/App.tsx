@@ -3,84 +3,79 @@ import {
   MemoryRouter as Router,
   Routes,
   Route,
-  Link,
-  Navigate,
+  useNavigate,
+  useLocation,
+  Outlet,
 } from 'react-router-dom';
-import icon from '../../assets/icon.svg';
 import './App.css';
-import useIpcReducer, { useIpcDispatch, useIpcListener } from './useIpcReducer';
+import { useIpcDispatch, useIpcListener } from './useIpcReducer';
 
 export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/">
+        <Route path="/" element={<ScriptNavigator />}>
           <Route index element={<Home />} />
-          <Route path="run-script" element={<RunScript />} />
+          <Route
+            path="collect-input"
+            element={
+              <Script>
+                <CollectInput />
+              </Script>
+            }
+          />
         </Route>
       </Routes>
     </Router>
   );
 }
 
+function ScriptNavigator() {
+  const navigate = useNavigate();
+  useIpcListener((action) => {
+    if (action.type === 'collect-input:waiting_for_input') {
+      navigate('collect-input', { state: action.payload });
+    }
+  });
+  return <Outlet />;
+}
+
 function Home() {
+  const dispatch = useIpcDispatch();
   return (
     <div>
+      <h1>FriptKit</h1>
       <div className="Hello">
-        <img width="200" alt="icon" src={icon} />
-      </div>
-      <h1>ScriptKit</h1>
-      <div className="Hello">
-        <Link to="run-script">Run Script</Link>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'app:run_script' })}
+        >
+          Run Script
+        </button>
       </div>
     </div>
   );
 }
 
-type Action = {
-  type: string;
-  payload: any;
-};
-
-function runScriptReducer<State>(state: State, action: Action) {
-  switch (action.type) {
-    case 'app:waiting_for_input':
-      return {
-        ...state,
-        activeComponent: {
-          name: 'CollectInput',
-          props: action.payload,
-        },
-      };
-    case 'script:exited':
-      return {
-        ...state,
-        exited: true,
-      };
-    default:
-      return state;
-  }
+function Script({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
+  useIpcListener((action) => {
+    if (action.type === 'script:exited') {
+      navigate('/');
+    }
+  });
+  return children;
 }
 
-function RunScript() {
-  const [state, dispatch] = useIpcReducer(runScriptReducer, {});
-  React.useEffect(() => {
-    dispatch({ type: 'app:run_script' });
-  }, [dispatch]);
-  if (state.exited) {
-    return <Navigate to="/" />;
-  }
-  switch (state.activeComponent?.name) {
-    case 'CollectInput':
-      return <CollectInput {...state.activeComponent?.props} />;
-    default:
-      return <div>Idle</div>;
-  }
-}
-
-function CollectInput({ placeholder }: { placeholder: string }) {
+function CollectInput() {
+  const location = useLocation();
   const [value, setValue] = React.useState('');
   const dispatch = useIpcDispatch();
+  useIpcListener((action) => {
+    if (action.type === 'collect-input:waiting_for_input') {
+      setValue('');
+    }
+  });
   return (
     <form
       onSubmit={(e) => {
@@ -90,7 +85,7 @@ function CollectInput({ placeholder }: { placeholder: string }) {
     >
       <div>
         <input
-          placeholder={placeholder}
+          placeholder={location.state?.placeholder || ''}
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />

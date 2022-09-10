@@ -41,10 +41,6 @@ function startScript(event: Electron.IpcMainEvent) {
   currentScript = fork('/Users/davidadams/code/electron-app/scratch/script.js');
   currentScript.on('error', (error) => {
     console.log(`ERROR: spawn failed! (${error})`);
-    // event.reply('my-channel', {
-    //   type: 'script:error',
-    //   payload: { error },
-    // });
   });
 
   currentScript.on('exit', (code, signal) => {
@@ -70,9 +66,6 @@ ipcMain.on('my-channel', async (event, arg) => {
     startScript(event);
   }
   currentScript?.send(arg[0]);
-  // let n = fork('node /Users/davidadams/code/electron-app/scratch/script.js');
-  // const stdout = execSync('node --version');
-  // event.reply('my-channel', String(stdout));
 });
 
 if (process.env.NODE_ENV === 'production') {
