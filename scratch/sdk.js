@@ -35,7 +35,7 @@ async function resolveValue(eventListenerMap) {
     };
     process.on('message', cb);
     // call init listener if defined
-    if (eventListenerMap.init) {
+    if (typeof eventListenerMap.init === 'function') {
       eventListenerMap.init({ send });
     }
   })
