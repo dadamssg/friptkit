@@ -8,7 +8,7 @@ import {
   Outlet,
 } from 'react-router-dom';
 import './App.css';
-import { useIpcDispatch, useIpcListener } from './useIpcReducer';
+import { useIpcDispatch, useIpcListener } from './useIpc';
 
 export default function App() {
   return (
@@ -72,6 +72,7 @@ function CollectInput() {
   const [value, setValue] = React.useState('');
   const dispatch = useIpcDispatch();
   useIpcListener((action) => {
+    // if already on this prompt, clear the value because the script is asking for new input
     if (action.type === 'collect-input:waiting_for_input') {
       setValue('');
     }
