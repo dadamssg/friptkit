@@ -6,7 +6,7 @@ function log(msg) {
 
 async function resolveValue(eventListenerMap) {
   let cb;
-  const send = (action) => process.send(action);
+  const dispatch = (action) => process.send(action);
   return new Promise((resolve) => {
     log('initiating resolveValue');
     const publicResolve = (value) => {
@@ -14,7 +14,7 @@ async function resolveValue(eventListenerMap) {
       // call resolved listener if defined
       if (typeof eventListenerMap.resolved === 'function') {
         eventListenerMap.resolved({
-          send,
+          dispatch,
           value,
         });
       }
@@ -29,14 +29,14 @@ async function resolveValue(eventListenerMap) {
         fn({
           action,
           resolve: publicResolve,
-          send,
+          dispatch,
         });
       }
     };
     process.on('message', cb);
     // call init listener if defined
     if (typeof eventListenerMap.init === 'function') {
-      eventListenerMap.init({ send });
+      eventListenerMap.init({ dispatch });
     }
   })
     .catch((error) => log(JSON.stringify(error.message)))
@@ -48,8 +48,8 @@ async function resolveValue(eventListenerMap) {
 
 function arg(placeholder) {
   return resolveValue({
-    init: ({ send }) =>
-      send({
+    init: ({ dispatch }) =>
+      dispatch({
         type: 'collect-input:waiting_for_input',
         payload: { placeholder },
       }),
